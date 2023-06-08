@@ -34,8 +34,8 @@ void GUIMyFrame1::Repaint()
 	    wxBitmap bitmap(Img_Tmp);          // Tworzymy tymczasowa bitmape na podstawie Img_Cpy
 		wxClientDC dc(m_panel4);   // Pobieramy kontekst okna
 		dc.DrawBitmap(bitmap, 0, 0, true); // Rysujemy bitmape na kontekscie urzadzenia
-		//prÛba podzielenia obrazka na mniejsze czÍúci i wyúwietlenia
-		//tutaj trzeba teø przekszta≥ciÊ naszπ macierz 
+		//pr√≥ba podzielenia obrazka na mniejsze cz√™≈ìci i wy≈ìwietlenia
+		//tutaj trzeba te¬ø przekszta¬≥ci√¶ nasz¬π macierz 
 		
 
 		//wxDateTime now = wxDateTime::Now();
@@ -48,7 +48,7 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 	static int j = 0;
 	static int k = 0;
 	static int x = 0;//mowi czy odwracac czy nie
-	//narazie zak≥adam taki rozmiar kwadratu
+	//narazie zak¬≥adam taki rozmiar kwadratu
 	int a = width / 10;
 	//sprawdzamy stan klawiszy
 	timer->Stop();
@@ -57,24 +57,22 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 	if (wxGetKeyState(WXK_LEFT))
 		l--;
 	if (wxGetKeyState(WXK_UP))
-	{
 		x++;
-	}
 	if (wxGetKeyState(WXK_DOWN))
-	{
 		x--;
-	}
+	if (wxGetKeyState(WXK_TAB))
+		h++;
 	timer->Start();
 
 	now_sec = sec;
 	wxDateTime now = wxDateTime::Now();
 	//czas trwania gry
 	sec = now.GetSecond() - started.GetSecond();
-	//wyúwietlanie czasu trwania gry
+	//wy≈ìwietlanie czasu trwania gry
 	WxStaticText1->SetLabel(
 		wxString::Format("%02d", now.GetMinute()-started.GetMinute()) + ":" + 
 		wxString::Format("%02d", sec));
-	//tutaj zak≥adam sobie jakπú szybkoúÊ spadania
+	//tutaj zak¬≥adam sobie jak¬π≈ì szybko≈ì√¶ spadania
 	if ((sec-now_sec)==0,1)
 	{
 		
@@ -89,11 +87,16 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 			}
 			else if (x > 0)
 			{
-				//obrÛt o 90 stopni
+				//obr√≥t o 90 stopni
 				tmp = tmp.Rotate(M_PI / 2.0, wxPoint(tmp.GetWidth() / 2., tmp.GetHeight() / 2.));
 				x = 0;
 			}
-
+			if (h)
+			{
+				//odbicie lustrzane wersja rozszerzona
+				tmp = tmp.Mirror();
+				h = 0;
+			}
 			dc_two.DrawBitmap(wxBitmap(tmp), width / 2 + l * 10, 10 * k, true);
 			for (auto r : v)
 			{
@@ -104,7 +107,8 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 			{
 				if (*tmp.GetData() == *images[i][j].GetData())
 				{
-					v.push_back(Kwadrat(wxBitmap(images[i][j]), width / 2 + l * 10, k * 10 - 5));
+					//gwarantuje, ≈ºe bƒôdzie ≈Çadnie u≈Ço≈ºone
+					v.push_back(Kwadrat(wxBitmap(images[i][j]),i*a, height - j * a - 40));
 					k = 0;
 					x = 0;
 					i++;
