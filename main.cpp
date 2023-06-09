@@ -19,7 +19,6 @@ bool MyApp::OnInit()
 wxImage::AddHandler(new wxJPEGHandler);           // Dodajemy handlery do formatow
  wxImage::AddHandler(new wxPNGHandler);            // z jakich bedziemy korzytsac
  wxImage image;
- {
      wxLogNull logNo;
      if (!image.LoadFile("Alicja.jpg"))
      {
@@ -31,7 +30,6 @@ wxImage::AddHandler(new wxJPEGHandler);           // Dodajemy handlery do format
      {
          mainFrame->Img_Org = image.Copy();              // Kopiujemy obrazek do Img_Org
      }
- }
 
  mainFrame->Show(true);
  SetTopWindow(mainFrame);
