@@ -1,3 +1,4 @@
+// Thuja LLC @2215 wszyskie prawa zastrzeżone
 #include <wx/wx.h>
 #include "GUIMyFrame1.h"
 
