@@ -70,11 +70,18 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 	WxStaticText1->SetLabel(
 		wxString::Format("%02d", now.GetMinute()-started.GetMinute()) + ":" + 
 		wxString::Format("%02d", sec));
+	static wxClientDC dc_two(m_panel3);
+	if (sec == 0)
+	{	//tutaj tworzę tło po lewej stronie na początku działania zegara
+		Img_Cpy = Img_Org.Copy();
+		wxImage Img_Tmp = Img_Cpy.ConvertToGreyscale();
+		wxBitmap bitmap(Img_Tmp);
+		dc_two.SetBackground(bitmap);
+	}
 	//tutaj zak³adam sobie jak¹œ szybkoœæ spadania,tik czasowy
 	if ((sec-now_sec)==0,1)
 	{
 		
-			wxClientDC dc_two(m_panel3);
 			dc_two.Clear();
 			if(k==0)
 				//pobieram kopie, aby nie modyfikować oryginału
