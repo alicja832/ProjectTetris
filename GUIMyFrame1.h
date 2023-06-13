@@ -45,6 +45,7 @@ public:
 	void ssize(wxSizeEvent& event);
 	void Timer1_Timer(wxTimerEvent& e);
 	void hhh(wxKeyEvent& event);
+	bool IsOnPlace(wxImage image, int i, int j,int k);
 
 
 	void get_started();	//zaczynamy liczyć czas
