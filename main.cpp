@@ -20,7 +20,7 @@ bool MyApp::OnInit()
 
 	wxImage image;
 	wxLogNull logNo;
-	if (!image.LoadFile("brick.png"))
+	if (!image.LoadFile("mountain_of_thujas.png"))
 	{
 		wxMessageBox(_("Nie uda\u0142o si\u0119 za\u0142adowa\u0107 obrazka"));
 		//mainFrame->Destroy();
