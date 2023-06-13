@@ -54,6 +54,8 @@ void GUIMyFrame1::OnQuit(wxCommandEvent& WXUNUSED(event))
 void GUIMyFrame1::OnNewGame(wxCommandEvent& WXUNUSED(event))
 {
 	//nie mam pojęcia gdzie tę funkcję wstawić xd
+	//nie mam pojęcia gdzie tę funkcję wstawić xd
+	Repaint();
 	get_started();
 }
 
@@ -149,33 +151,27 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 		}
 		//rysujemy kafelek
 		dc_two.DrawBitmap(wxBitmap(tmp), width / 2 + l * 10, 10 * k, true);
+		if (v.size() == 10 * 15)
+		{
+			//powinno być x*y ale narazie się nie da
+			timer->Stop();
+		}
 		//tu wyświetlam już ułożone kafelki-także błąd optymalizacji-trzeba to zmienić!
 		for (auto r : v)
 		{
 			dc_two.DrawBitmap(r.image, r.x, r.y, true);
 		}
 		//sprawdzam czy kafel trafił na miejsce-albo w okolice-myślę, że też można coś tutaj zmienić
-		if ((width / 2 + l * 10) >= (i*a - 5) && (width / 2 + l * 10) <= (i * a + 5)
-			&& (10 * k) >= (height - j * a - 40) && (k * 10) <= (height - j * a))
-		{
-			//tutaj  sprawdzam czy kwadrat nie jest jakoś odwrócony
-			if (*tmp.GetData() == *images[i][j].GetData())
-			{
-				//gwarantuje, że będzie ładnie ułożone-jako współrzędne wpisuję pierwotne współrzędne
-				v.push_back(Kwadrat(wxBitmap(images[i][j]), i*a, height - j * a - 40));
+		if(IsOnPlace(tmp,i,j,k))
+		{	//gwarantuje, że będzie ładnie ułożone-jako współrzędne wpisuję pierwotne współrzędne
+				v.push_back(Kwadrat(wxBitmap(images[i][j]), i * a, height - j * a - 40));
 				k = 0;
 				x = 0;
 				//pobieram kolejny element z tablicy kafelków
 				i++;
 				l = 0;
-			}
-			else
-			{
-				k++;
-			}
 		}
-		else
-			k++;
+		else k++;
 		if ((10 * k) > height)
 		{
 			k = 0;
@@ -192,7 +188,19 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 
 	}
 }
-
+bool GUIMyFrame1::IsOnPlace(wxImage image,int i,int j,int k)
+{
+	if ((width / 2 + l * 10) >= (i * a - 5) && (width / 2 + l * 10) <= (i * a + 5)
+		&& (10 * k) >= (height - j * a - 40) && (k * 10) <= (height - j * a))
+	{
+		//tutaj  sprawdzam czy kwadrat nie jest jakoś odwrócony
+		if (*tmp.GetData() == *images[i][j].GetData())
+		{
+			return true;
+		}
+	}
+	return false;
+}
 void GUIMyFrame1::hhh(wxKeyEvent& event)
 {
 	//to chyba musi być xxd
