@@ -52,10 +52,10 @@ class GUIMyFrame1 : public MyFrame1
 		//to s¹ nasze ma³e elementy
 		//bok kwadratu
 		//użytkownik podaje długosc x
-		int x=10;
+		int x;
 		//wyliczony automatycznie
-		int y=15;
-		wxImage images[x][y];
+		int y;
+		wxImage images[10][15];
 		
 		//zapisujemy wektor w którym bêd¹ ju¿ pouk³adane elementy
 		std::vector <Kwadrat> v;
