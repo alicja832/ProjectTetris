@@ -42,6 +42,7 @@ void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
 	static int j = 0;
 	static int k = 0;//zmienna ktora zmienia położenie y kafelka
 	static int x = 0;//mowi czy odwracac czy nie
+	static int h = 0;//mowi czy robić mirror czy nie
 	//narazie zak³adam taki rozmiar kwadratu
 	int a = width / 10;
 	//sprawdzamy stan klawiszy
