@@ -3,46 +3,20 @@ GUIMyFrame1::GUIMyFrame1(wxWindow* parent)
 	:
 	MyFrame1(parent)
 {
-	//definicja trzeba zrobić ENUM
+	dc_right = new wxClientDC(m_panel_right);
+	dc_left = new wxClientDC(m_panel_left);
 	timer = new wxTimer();
 	timer->SetOwner(this, 1001);
 
-	WxStaticText1 = new wxStaticText(this, wxID_ANY, _("00:00"), wxPoint(500, 300), wxDefaultSize, 0, _("WxStaticText1"));
-	WxStaticText1->SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, _("Tahoma")));
-
+	// initialize variables
 	sec = 0;
 
-	l = 0;
+	shiftAmount = 0;
 
+	row = 0;
+	col = 0;
+	x = 2;
 
-	//menu
-	menubar = new wxMenuBar;
-	file = new wxMenu;
-
-	file->Append(wxID_NEW, wxT("&New"));
-	file->Append(wxID_ANY, wxT("&Open"));
-	file->Append(wxID_ANY, wxT("&Save"));
-	file->AppendSeparator();
-
-	imp = new wxMenu;
-	imp->Append(wxID_ANY, wxT("Thuja"));
-	imp->Append(wxID_ANY, wxT("Mountains"));
-	imp->Append(wxID_ANY, wxT("Mountain of thujas"));
-
-	file->AppendSubMenu(imp, wxT("I&mage"));
-
-	quit = new wxMenuItem(file, wxID_EXIT, wxT("&Quit\tCtrl+W"));
-	newGame = new wxMenuItem(file, wxID_NEW, wxT("&New Game\tCtrl+N"));
-	file->Append(quit);
-	file->Append(newGame);
-
-	menubar->Append(file, wxT("&File"));
-	SetMenuBar(menubar);
-
-	Connect(wxID_NEW, wxEVT_COMMAND_MENU_SELECTED,
-		wxCommandEventHandler(GUIMyFrame1::OnNewGame));
-	Connect(wxID_EXIT, wxEVT_COMMAND_MENU_SELECTED,
-		wxCommandEventHandler(GUIMyFrame1::OnQuit));
 	Centre();
 }
 
@@ -51,170 +25,358 @@ void GUIMyFrame1::OnQuit(wxCommandEvent& WXUNUSED(event))
 	Close(true);
 }
 
-void GUIMyFrame1::OnNewGame(wxCommandEvent& WXUNUSED(event))
+void GUIMyFrame1::OnButtonStartClicked(wxCommandEvent& WXUNUSED(event))
 {
-	//nie mam pojęcia gdzie tę funkcję wstawić xd
-	//nie mam pojęcia gdzie tę funkcję wstawić xd
-	Repaint();
-	get_started();
+	DoImageTab();
+	GetStarted();
+	//Repaint();
+	Game();
+}
+void GUIMyFrame1::StartTimer(wxTimerEvent& e)
+{
+	Game();
 }
 
-void GUIMyFrame1::get_started()
+void GUIMyFrame1::GetStarted()
 {
-	timer->Start(100);
+	img_cpy = img_org.Copy();
+	wxImage Img_Tmp = img_cpy.ConvertToGreyscale();
+	Img_Tmp.Rescale(width, height);
+	wxBitmap bitmap(Img_Tmp);
+	dc_left->SetBackground(bitmap);
+
 	started = wxDateTime::Now();
+	timer->Start(100);
 }
 
 void GUIMyFrame1::Repaint()
 {
-	int a = width / 10.;
-	//dzielimy obrazek na kafelki
-	for (int i = 0; i < 9; i++)
-	{
-		for (int j = 0; j < 14; j++)
-			images[i][j] = (Img_Org.GetSubImage(wxRect(wxPoint(i*a, height - (j + 1)*a), wxSize(a, a))));
-	}
 
-	wxBitmap bitmap(Img_Org);          // Tworzymy tymczasowa bitmape na podstawie Img_Cpy
-	wxClientDC dc(m_panel4);   // Pobieramy kontekst okna
-	dc.DrawBitmap(bitmap, 0, 0, true); // Rysujemy bitmape na kontekscie urzadzenia
+	img_cpy = img_org.Copy();
+	wxImage Img_Tmp = img_cpy.Rescale(width, height);
+	wxBitmap bitmap(Img_Tmp);
+	dc_right->DrawBitmap(bitmap, 0, 0, true); 
 
 }
-void GUIMyFrame1::Timer1_Timer(wxTimerEvent& e)
+void GUIMyFrame1::Game()
 {
-	static int i = 0;
-	static int j = 0;
-	static int k = 0;//zmienna ktora zmienia położenie y kafelka
-	static int x = 0;//mowi czy odwracac czy nie
-	//narazie zak³adam taki rozmiar kwadratu
-	int a = width / 10;
-	static int h = 0; //dopisane teraz D
-	//sprawdzamy stan klawiszy
+	if (v.size() >= x * ceil( height / 2 / b )) { //YOU WON
+		timer->Stop();
+
+		dc_left->Clear();
+		img_cpy = img_org.Copy();
+		wxImage Img_Tmp = img_cpy.Rescale(width, height);
+		wxBitmap bitmap(Img_Tmp);
+		dc_left->DrawBitmap(bitmap, 0, 0, true); 
+
+		//Print the selected string
+		wxMessageBox(wxT("Congratulations! You won with score " + wxString::Format("%02d", (sec < 0) ? (60 + sec) / 60 : sec / 60) + ":" +
+			wxString::Format("%02d", (sec < 0) ? (60 + sec) % 60 : sec % 60)), "End of round", wxOK | wxICON_INFORMATION);
+		return;
+	}
+
+
+	static int rotation = 0;// rotation
+	static int act_rot = 0;//is rotation changed
+	static int mirror_horizontal = 0; // mirror horizontally
+	static int act_mirror_horizontal = 0; // check if mirrored horizontally
+	static int mirror_vertical = 0; // mirror vertically
+	static int act_mirror_vertical = 0; // check if mirrored vertically
+	int mirror = 0;//zmienna która przechowuje infomacje o tym co się wydarzyło
+	//check keys
 	timer->Stop();
 	if (wxGetKeyState(WXK_RIGHT))
-		//l=1 przesuwamy kafel w prawo
-		l++;
+		// tile to the left
+		shiftAmount++;
 	if (wxGetKeyState(WXK_LEFT))
-		l--;
+		// tile to the right
+		shiftAmount--;
 	if (wxGetKeyState(WXK_UP))
-		//obracamy o 90 stopni
-		x++;
+		// +90 deg
+		rotation++;
 	if (wxGetKeyState(WXK_DOWN))
-		//obracamy o -90 stopni
-		x--;
+		// -90 deg
+		rotation--;
 	if (wxGetKeyState(WXK_TAB))
-		//odbicie lustrzane
-		h++;
-	timer->Start();
+		// mirror horizontally
+		mirror_horizontal++;
+	if (wxGetKeyState(WXK_F1))
+		// mirror vertically
+		mirror_vertical--;
+	timer->Start(100);
 
-	now_sec = sec;
 	wxDateTime now = wxDateTime::Now();
-	//czas trwania gry
-	sec = now.GetSecond() - started.GetSecond();
-	//wyœwietlanie czasu trwania gry
+	sec = now.GetTicks() - started.GetTicks();
+	// print time 
 	WxStaticText1->SetLabel(
-		wxString::Format("%02d", now.GetMinute() - started.GetMinute()) + ":" +
-		wxString::Format("%02d", sec));
-	static wxClientDC dc_two(m_panel3);
-	if (sec == 0)
-	{	//tutaj tworzę tło po lewej stronie na początku działania zegara
-		Img_Cpy = Img_Org.Copy();
-		wxImage Img_Tmp = Img_Cpy.ConvertToGreyscale();
-		wxBitmap bitmap(Img_Tmp);
-		dc_two.SetBackground(bitmap);
-	}
-	//tutaj zak³adam sobie jak¹œ szybkoœæ spadania,tik czasowy
-	if ((sec - now_sec) == 0, 1)
-	{
+		wxString::Format("%02d", (sec < 0) ? (60 + sec) / 60 : sec / 60) + ":" +
+		wxString::Format("%02d", (sec < 0) ? (60 + sec) % 60 : sec % 60));//dlaczego ta linijka? bo pojawialy sie ujemne liczby w licznku; dzięki niej modulo będzie zwracać liczby dodatnie
 
-		dc_two.Clear();
-		if (k == 0)
-			//pobieram kopie, aby nie modyfikować oryginału
-			tmp = images[i][j].Copy();
-		//wadą jest to że za każdym razem, za każdą iteracją to obracam-brak optymalizacji
-		if (x < 0) {
-			tmp = tmp.Rotate(-M_PI / 2.0, wxPoint(tmp.GetWidth() / 2., tmp.GetHeight() / 2.));
-			x = 0;
-			// TO DO: Obrot o -90 stopni
+
+	if (true)
+	{
+		dc_left->Clear();
+		if (moving_y == 0) {
+			// get copy
+			// get random rotation
+			srand(time(NULL));
+			rotation = rand() % 4;
+			img_tmp = images[row][col].Copy();
 		}
-		else if (x > 0)
+		if (rotation != act_rot) {
+			img_tmp = images[row][col].Copy();
+			img_tmp = img_tmp.Rotate(rotation * M_PI / 2.0, wxPoint(img_tmp.GetWidth() / 2., img_tmp.GetHeight() / 2.));
+			act_rot = rotation;
+		}
+
+		if (mirror_horizontal != act_mirror_horizontal) {
+				img_tmp = img_tmp.Mirror();
+				act_mirror_horizontal = mirror_horizontal;
+		}
+
+		if (mirror_vertical != act_mirror_vertical)
 		{
-			//obrót o 90 stopni
-			tmp = tmp.Rotate(M_PI / 2.0, wxPoint(tmp.GetWidth() / 2., tmp.GetHeight() / 2.));
-			x = 0;
+			img_tmp = img_tmp.Mirror(false);
+			act_mirror_vertical = mirror_vertical;
 		}
-		if (h)
-		{
-			//odbicie lustrzane wersja rozszerzona
-			tmp = tmp.Mirror();
-			h = 0;
-		}
-		//rysujemy kafelek
-		dc_two.DrawBitmap(wxBitmap(tmp), width / 2 + l * 10, 10 * k, true);
-		if (v.size() == 10 * 15)
-		{
-			//powinno być x*y ale narazie się nie da
-			timer->Stop();
-		}
-		//tu wyświetlam już ułożone kafelki-także błąd optymalizacji-trzeba to zmienić!
+
+		dc_left->DrawBitmap(wxBitmap(img_tmp), width / 2 + shiftAmount * 10, moving_y, true);
 		for (auto r : v)
 		{
-			dc_two.DrawBitmap(r.image, r.x, r.y, true);
+			dc_left->DrawBitmap(r.image, r.x, r.y, true);
 		}
-		//sprawdzam czy kafel trafił na miejsce-albo w okolice-myślę, że też można coś tutaj zmienić
-		if(IsOnPlace(tmp,i,j,k))
-		{	//gwarantuje, że będzie ładnie ułożone-jako współrzędne wpisuję pierwotne współrzędne
-				v.push_back(Kwadrat(wxBitmap(images[i][j]), i * a, height - j * a - 40));
-				k = 0;
-				x = 0;
-				//pobieram kolejny element z tablicy kafelków
-				i++;
-				l = 0;
+		// check which mirror
+		mirror = mirror_vertical ? mirror_vertical : mirror_horizontal;
+		// is tile on the proper place
+		if (IsOnPlace(img_tmp, col, row, moving_y, rotation, mirror))
+		{	// allows for little mismatch in placing
+			v.push_back(Square(wxBitmap(images[row][col]), col * a, height - (row + 1) * b));
+			moving_y = 0;
+			rotation = 0;
+			mirror_vertical = 0;
+			mirror_horizontal = 0;
+			// get next tile
+			col++;
+			shiftAmount = 0;
 		}
-		else k++;
-		if ((10 * k) > height)
+		else
+			moving_y += moving_y_change;
+		if ((moving_y) > height)
 		{
-			k = 0;
-			l = 0;
-			x = 0;
+			moving_y = 0;
+			shiftAmount = 0;
+			rotation = 0;
+			mirror_vertical = 0;
+			mirror_horizontal = 0;
 		}
-		if (i > 8)
+		// go to the next row
+		if (col > (x - 1))
 		{
-			j++;
-			i = 0;
-			l = 0;
-			k = 0;
+			row++;
+			col = 0;
+			shiftAmount = 0;
+			moving_y = 0;
 		}
 
 	}
+
+
 }
-bool GUIMyFrame1::IsOnPlace(wxImage image,int i,int j,int k)
+bool GUIMyFrame1::IsOnPlace(wxImage& image, int& c, int& r, int& _moving_y, int& rotation, int& mirror)
 {
-	if ((width / 2 + l * 10) >= (i * a - 5) && (width / 2 + l * 10) <= (i * a + 5)
-		&& (10 * k) >= (height - j * a - 40) && (k * 10) <= (height - j * a))
+	int moving_x_change = 10;
+	if ((width / 2 + shiftAmount * moving_x_change) >= (c * a - a / 5) && (width / 2 + shiftAmount * moving_x_change) <= (c * a + a / 5)
+		&& (_moving_y) >= (height - ((r + 1) * b)) && (_moving_y) <= (height - r * b))
 	{
-		//tutaj  sprawdzam czy kwadrat nie jest jakoś odwrócony
-		if (*tmp.GetData() == *images[i][j].GetData())
+
+		//is the square in proper angle
+		if (rotation % 4 == 0 && mirror % 2 == 0)
 		{
 			return true;
 		}
 	}
 	return false;
 }
-void GUIMyFrame1::hhh(wxKeyEvent& event)
-{
-	//to chyba musi być xxd
-}
 
-void GUIMyFrame1::ssize(wxSizeEvent& event) {
-	//narazie tutaj
 
-	//pobieramy aktualny rozmiar panelu z prawej strony dla dopasowania obrazka// m_panel_right
-	height = m_panel4->GetSize().GetHeight();
-	width = m_panel4->GetSize().GetWidth();
-	//resizujemy obrazek
-	wxImage tmp = Img_Org.Scale(width, height);
-	Img_Org = tmp.Copy();
-	//Img_Org.Resize(m_panel4->GetSize(), m_panel4->GetPosition());
+void GUIMyFrame1::OnSize(wxSizeEvent& event) {
+
+	// This happens when the window is resized
+
+	// get actoal dimensions
+	height = m_panel_right->GetSize().GetHeight();
+	width = m_panel_right->GetSize().GetWidth();
+	a = width / x;
+	b = a;
+
+	img_cpy = img_org.Copy();
+	wxImage Img_Tmp = img_cpy.Rescale(width, height);
+
+	for (int row = 0; row < y; row++)
+	{
+		for (int col = 0; col < (x); col++)
+			images[row][col] = (Img_Tmp.GetSubImage(wxRect(wxPoint(col * a, height - (row + 1) * b), wxSize(a, b))));
+	}
+
+	int r, c;
+	for (int i = 0; i < v.size(); ++i) {
+		r = i / x;
+		c = i % x;
+		v[i] = Square(wxBitmap(images[r][c]), c * a, height - (r + 1) * b);
+	}
+	for (auto r : v)
+	{
+		dc_left->DrawBitmap(r.image, r.x, r.y, true);
+	}
+
+	if (sec > 0) {
+		img_tmp = images[row][col].Copy();
+	}
+
+	if (sec > 0) {
+		delete WxStaticText1;
+		WxStaticText1 = new wxStaticText(this, wxID_ANY, _("00:00"), wxPoint(width + 10, 10), wxDefaultSize, 0, _("WxStaticText1"));
+		WxStaticText1->SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, _("Tahoma")));
+	}
+
+	Img_Tmp = img_cpy.ConvertToGreyscale();
+	Img_Tmp.Rescale(width, height);
+	wxBitmap bitmap(Img_Tmp);
+	dc_left->SetBackground(bitmap);
+
 	Repaint();
 }
+void GUIMyFrame1::OnRadioImage(wxCommandEvent& event)
+{
+	// Get the radio button group that triggered the event
+	wxRadioBox* group = dynamic_cast<wxRadioBox*>(event.GetEventObject());
+
+	// Get the selected string from the radio button group
+	wxString selected = group->GetStringSelection();
+
+	//take picture
+	std::string name_picture;
+	if (selected == group1Choices[0])
+		name_picture = "mount1_half.png";
+	if (selected == group1Choices[1])
+		name_picture = "powershell_half.png";
+	if (selected == group1Choices[2])
+		name_picture = "thuja_half.png";
+	//change picture
+	wxImage::AddHandler(new wxJPEGHandler);           
+	wxImage::AddHandler(new wxPNGHandler);            
+
+	wxImage image;
+	wxLogNull logNo;
+	if (!image.LoadFile(name_picture))
+	{
+		wxMessageBox(_("Nie uda\u0142o si\u0119 za\u0142adowa\u0107 obrazka"));
+	}
+
+	img_org = image.Copy();
+	img_cpy = img_org.Copy();
+	wxImage Img_Tmp = img_cpy.ConvertToGreyscale();
+	Img_Tmp.Rescale(width, height);
+	wxBitmap bitmap(Img_Tmp);
+	dc_left->SetBackground(bitmap);
+	dc_left->DrawBitmap(bitmap, 0, 0, true);
+
+	DoImageTab();
+	Repaint();
+	m_panel_left->SetFocus();
+}
+
+void GUIMyFrame1::OnRadioElements(wxCommandEvent& event)
+{
+	// Get the radio button group that triggered the event
+	wxRadioBox* group = dynamic_cast<wxRadioBox*>(event.GetEventObject());
+
+	// Get the selected string from the radio button group
+	wxString selected = group->GetStringSelection();
+
+
+
+	//take action-calculate the size of squares
+	if (selected == '2')
+		x = 2;
+	if (selected == '3')
+		x = 3;
+	if (selected == '4')
+		x = 4;
+
+
+	img_cpy = img_org.Copy();
+	wxImage Img_Tmp = img_cpy.ConvertToGreyscale();
+	Img_Tmp.Rescale(width, height);
+	wxBitmap bitmap(Img_Tmp);
+	dc_left->SetBackground(bitmap);
+	dc_left->DrawBitmap(bitmap, 0, 0, true);
+
+	DoImageTab();
+	m_panel_left->SetFocus();
+}
+void GUIMyFrame1::DoImageTab()
+{
+	timer->Stop();
+
+	row = 0;
+	col = 0;
+
+	moving_y = 0;
+
+	a = width / x;
+
+	b = a;
+	y = 10;
+	delete[] images;
+	images = new wxImage * [y];
+	for (int row = 0; row < y; row++)
+		images[row] = new wxImage[x];
+
+	img_cpy = img_org.Copy();
+	wxImage Img_Tmp = img_cpy.Rescale(width, height);
+	for (int row = 0; row < y; row++)
+	{
+		for (int col = 0; col < (x); col++)
+			images[row][col] = (Img_Tmp.GetSubImage(wxRect(wxPoint(col * a, height - (row + 1) * b), wxSize(a, b))));
+	}
+
+
+	v.clear();
+	Repaint();
+	m_panel_left->SetFocus();
+	delete WxStaticText1;
+	WxStaticText1 = new wxStaticText(this, wxID_ANY, _("00:00"), wxPoint(width + 10, 10), wxDefaultSize, 0, _("WxStaticText1"));
+	WxStaticText1->SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, _("Tahoma")));
+
+}
+void GUIMyFrame1::OnRadioTempo(wxCommandEvent& event)
+{
+	// Get the radio button group that triggered the event
+	wxRadioBox* group = dynamic_cast<wxRadioBox*>(event.GetEventObject());
+
+	// Get the selected string from the radio button group
+	wxString tempo = group->GetStringSelection();
+
+	// Print the selected string
+	//wxLogMessage("%s is selected", selected);
+	if (tempo == "Slow")
+		moving_y_change = 4;
+	if (tempo == "Normal")
+		moving_y_change = 8;
+	if (tempo == "Fast")
+		moving_y_change = 12;
+
+	m_panel_left->SetFocus();
+}
+GUIMyFrame1::~GUIMyFrame1()
+{
+	delete WxStaticText1;
+	delete dc_left;
+	delete dc_right;
+	delete timer;
+	//clear memory
+	for (int i = 0; i < y; i++)
+		delete[] images[i];
+}
+
